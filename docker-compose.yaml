@@ -1,0 +1,16 @@
+version: '3.8'
+
+services:
+  miner-monitor:
+    build: ./backend
+    # The container will have access to the host's network
+    # This is necessary for the backend to scan the local network
+    network_mode: "host"
+    volumes:
+      # Mount a volume to persist the SQLite database
+      - miner_data:/app/data
+    container_name: miner_monitor_app
+    restart: unless-stopped
+
+volumes:
+  miner_data:

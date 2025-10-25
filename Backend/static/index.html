@@ -1,0 +1,446 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Miner Monitor</title>
+    <!-- Load Tailwind CSS from CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        /* Custom styles */
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+        .status-online {
+            color: #10B981; /* Tailwind green-500 */
+        }
+        .status-offline {
+            color: #EF4444; /* Tailwind red-500 */
+        }
+        /* Simple spinner */
+        .spinner {
+            border: 4px solid rgba(0, 0, 0, 0.1);
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            border-left-color: #09f;
+            animation: spin 1s ease infinite;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body class="bg-gray-100 min-h-screen">
+
+    <div class="container mx-auto p-4 md:p-8">
+        <h1 class="text-3xl font-bold text-gray-800 mb-6">Miner Monitor</h1>
+
+        <!-- Global Message Box -->
+        <div id="message-box" class="hidden p-4 rounded-md mb-6"></div>
+
+        <!-- Section: Desired Settings -->
+        <div class="bg-white p-6 rounded-lg shadow-md mb-8">
+            <h2 class="text-xl font-semibold text-gray-700 mb-4">Global Miner Configuration</h2>
+            <p class="text-sm text-gray-500 mb-4">
+                Enter your desired settings below and click "Update All" to apply them to all connected devices.
+            </p>
+            <form id="settings-form" class="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-4">
+                <!-- Primary Pool -->
+                <div class="col-span-1 border-r-0 md:border-r md:pr-6 border-gray-200">
+                    <h3 class="font-medium text-gray-900 mb-2">Primary Pool (Stratum)</h3>
+                    <div>
+                        <label for="stratumURL" class="block text-sm font-medium text-gray-700">URL</label>
+                        <input type="text" id="stratumURL" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm" placeholder="e.g., solo.ckpool.org">
+                    </div>
+                    <div class="grid grid-cols-2 gap-4 mt-2">
+                        <div>
+                            <label for="stratumPort" class="block text-sm font-medium text-gray-700">Port</label>
+                            <input type="number" id="stratumPort" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm" placeholder="3333">
+                        </div>
+                        <!-- Difficulty Wrapper -->
+                        <div id="stratum-difficulty-wrapper" class="hidden">
+                            <label for="stratumSuggestedDifficulty" class="block text-sm font-medium text-gray-700">Difficulty</label>
+                            <input type="number" id="stratumSuggestedDifficulty" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm" placeholder="1000">
+                        </div>
+                    </div>
+                    <div class="mt-2">
+                        <label for="stratumUser" class="block text-sm font-medium text-gray-700">User</label>
+                        <input type="text" id="stratumUser" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm" placeholder="YourUsername.WorkerName">
+                    </div>
+                    <div class="mt-2">
+                        <label for="stratumPass" class="block text-sm font-medium text-gray-700">Password</label>
+                        <input type="password" id="stratumPass" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm" placeholder="e.g., x">
+                    </div>
+                    <div class="flex items-center mt-3">
+                        <input id="stratumEnonceSubscribe" type="checkbox" class="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500">
+                        <label for="stratumEnonceSubscribe" class="ml-2 block text-sm text-gray-900">Extranonce Subscribe</label>
+                    </div>
+                </div>
+
+                <!-- Fallback Pool -->
+                <div class="col-span-1">
+                    <h3 class="font-medium text-gray-900 mb-2">Fallback Pool</h3>
+                    <div>
+                        <label for="fallbackStratumURL" class="block text-sm font-medium text-gray-700">URL</label>
+                        <input type="text" id="fallbackStratumURL" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm" placeholder="e.g., us-east01.miningrigrentals.com">
+                    </div>
+                    <div class="grid grid-cols-2 gap-4 mt-2">
+                        <div>
+                            <label for="fallbackStratumPort" class="block text-sm font-medium text-gray-700">Port</label>
+                            <input type="number" id="fallbackStratumPort" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm" placeholder="50664">
+                        </div>
+                         <!-- Fallback Difficulty Wrapper -->
+                        <div id="fallback-difficulty-wrapper" class="hidden">
+                            <label for="fallbackStratumSuggestedDifficulty" class="block text-sm font-medium text-gray-700">Difficulty</label>
+                            <input type="number" id="fallbackStratumSuggestedDifficulty" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm" placeholder="1000">
+                        </div>
+                    </div>
+                    <div class="mt-2">
+                        <label for="fallbackStratumUser" class="block text-sm font-medium text-gray-700">User</label>
+                        <input type="text" id="fallbackStratumUser" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm" placeholder="YourFallback.WorkerName">
+                    </div>
+                    <div class="mt-2">
+                        <label for="fallbackStratumPass" class="block text-sm font-medium text-gray-700">Password</label>
+                        <input type="password" id="fallbackStratumPass" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm" placeholder="e.g., x">
+                    </div>
+                    <div class="flex items-center mt-3">
+                        <input id="fallbackStratumEnonceSubscribe" type="checkbox" class="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500">
+                        <label for="fallbackStratumEnonceSubscribe" class="ml-2 block text-sm text-gray-900">Extranonce Subscribe</label>
+                    </div>
+                </div>
+                
+                <!-- Update Button -->
+                <div class="col-span-1 md:col-span-2 flex justify-end mt-4">
+                    <button type="submit" id="update-all-btn" class="inline-flex justify-center rounded-md border border-transparent bg-indigo-600 py-2 px-6 text-sm font-medium text-white shadow-sm hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2">
+                        Update All Devices
+                    </button>
+                </div>
+            </form>
+        </div>
+
+        <!-- Section: Network Management -->
+        <div class="bg-white p-6 rounded-lg shadow-md mb-8">
+            <h2 class="text-xl font-semibold text-gray-700 mb-4">Network Management</h2>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <!-- Scan Subnet -->
+                <div>
+                    <label for="subnet-scan" class="block text-sm font-medium text-gray-700">Scan Subnet</label>
+                    <div class="mt-1 flex rounded-md shadow-sm">
+                        <input type="text" id="subnet-scan" class="block w-full flex-1 rounded-none rounded-l-md border-gray-300 focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm" placeholder="e.g., 192.168.1.">
+                        <button id="scan-btn" class="inline-flex items-center rounded-r-md border border-l-0 border-gray-300 bg-gray-50 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-100">
+                            Scan
+                        </button>
+                    </div>
+                    <p class="mt-1 text-xs text-gray-500">Enter the first 3 octets with a trailing dot.</p>
+                </div>
+                <!-- Add Device -->
+                <div>
+                    <label for="add-ip" class="block text-sm font-medium text-gray-700">Add Device by IP</label>
+                    <div class="mt-1 flex rounded-md shadow-sm">
+                        <input type="text" id="add-ip" class="block w-full flex-1 rounded-none rounded-l-md border-gray-300 focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm" placeholder="e.g., 192.168.1.100">
+                        <button id="add-btn" class="inline-flex items-center rounded-r-md border border-l-0 border-gray-300 bg-gray-50 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-100">
+                            Add
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Section: Device List -->
+        <div class="bg-white rounded-lg shadow-md overflow-hidden">
+            <div class="flex justify-between items-center p-6">
+                <h2 class="text-xl font-semibold text-gray-700">Device List</h2>
+                <div id="loading-spinner" class="spinner hidden"></div>
+            </div>
+            <div class="overflow-x-auto">
+                <table class="min-w-full divide-y divide-gray-200">
+                    <thead class="bg-gray-50">
+                        <tr>
+                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Hostname</th>
+                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">IP Address</th>
+                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Hashrate (10m)</th>
+                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Temp</th>
+                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Stratum URL</th>
+                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Stratum User</th>
+                        </tr>
+                    </thead>
+                    <tbody id="device-table-body" class="bg-white divide-y divide-gray-200">
+                        <!-- Rows will be injected by JavaScript -->
+                        <tr>
+                            <td colspan="7" class="px-6 py-4 text-center text-gray-500">No devices found. Try adding one or scanning the network.</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const API_BASE = window.location.origin; // Assumes frontend is served from same host
+            const deviceTableBody = document.getElementById('device-table-body');
+            const loadingSpinner = document.getElementById('loading-spinner');
+            const messageBox = document.getElementById('message-box');
+            
+            const scanBtn = document.getElementById('scan-btn');
+            const addBtn = document.getElementById('add-btn');
+            const settingsForm = document.getElementById('settings-form');
+            const updateAllBtn = document.getElementById('update-all-btn');
+
+            // --- Get elements for conditional fields ---
+            const stratumEnonceCheckbox = document.getElementById('stratumEnonceSubscribe');
+            const fallbackEnonceCheckbox = document.getElementById('fallbackStratumEnonceSubscribe');
+            const stratumDifficultyWrapper = document.getElementById('stratum-difficulty-wrapper');
+            const fallbackDifficultyWrapper = document.getElementById('fallback-difficulty-wrapper');
+
+            // --- Helper Functions ---
+
+            function showMessage(type, text, duration = 5000) {
+                messageBox.classList.remove('hidden', 'bg-green-100', 'text-green-700', 'bg-red-100', 'text-red-700');
+                if (type === 'success') {
+                    messageBox.classList.add('bg-green-100', 'text-green-700');
+                } else if (type === 'error') {
+                    messageBox.classList.add('bg-red-100', 'text-red-700');
+                }
+                messageBox.textContent = text;
+                messageBox.classList.remove('hidden');
+
+                if (duration) {
+                    setTimeout(() => messageBox.classList.add('hidden'), duration);
+                }
+            }
+
+            function formatHashrate(ghs) {
+                if (typeof ghs !== 'number' || ghs === 0) return 'N/A';
+                if (ghs < 1000) return `${ghs.toFixed(2)} GH/s`;
+                return `${(ghs / 1000).toFixed(2)} TH/s`;
+            }
+
+            function getDeviceValue(data, key, defaultValue = 'N/A') {
+                return data ? data[key] : defaultValue;
+            }
+
+            // --- Core Functions ---
+
+            async function fetchDevices() {
+                loadingSpinner.classList.remove('hidden');
+                try {
+                    const response = await fetch(`${API_BASE}/api/devices`);
+                    const devices = await response.json();
+                    
+                    if (devices.length === 0) {
+                        deviceTableBody.innerHTML = '<tr><td colspan="7" class="px-6 py-4 text-center text-gray-500">No devices found. Try adding one or scanning the network.</td></tr>';
+                        return;
+                    }
+
+                    deviceTableBody.innerHTML = ''; // Clear existing rows
+                    devices.forEach(dev => {
+                        const data = dev.data || {};
+                        const isOnline = data.status !== 'offline';
+                        
+                        // Handle both hashrate formats
+                        const hashrateGHS = data.hashRate_10m || data.hashRate; 
+
+                        const row = `
+                            <tr class="${isOnline ? '' : 'bg-gray-50 opacity-60'}">
+                                <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">${dev.hostname}</td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                    <a href="http://${dev.ip}" target="_blank" class="text-indigo-600 hover:text-indigo-900">${dev.ip}</a>
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                                    <span class="${isOnline ? 'status-online' : 'status-offline'}">
+                                        ${isOnline ? 'Online' : 'Offline'}
+                                    </span>
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${formatHashrate(hashrateGHS)}</td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${getDeviceValue(data, 'temp', '--')} °C</td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 truncate" title="${getDeviceValue(data, 'stratumURL')}">${getDeviceValue(data, 'stratumURL')}</td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 truncate" title="${getDeviceValue(data, 'stratumUser')}">${getDeviceValue(data, 'stratumUser')}</td>
+                            </tr>
+                        `;
+                        deviceTableBody.innerHTML += row;
+                    });
+
+                } catch (error) {
+                    console.error('Error fetching devices:', error);
+                    showMessage('error', 'Could not fetch devices. Is the backend running?');
+                    deviceTableBody.innerHTML = '<tr><td colspan="7" class="px-6 py-4 text-center text-red-500">Error loading devices.</td></tr>';
+                } finally {
+                    loadingSpinner.classList.add('hidden');
+                }
+            }
+
+            async function handleScan(e) {
+                e.preventDefault();
+                const subnet = document.getElementById('subnet-scan').value;
+                if (!subnet) {
+                    showMessage('error', 'Please enter a subnet prefix.');
+                    return;
+                }
+                
+                scanBtn.disabled = true;
+                scanBtn.textContent = 'Scanning...';
+                showMessage('success', `Scanning ${subnet}*... This may take a moment.`, null);
+
+                try {
+                    const response = await fetch(`${API_BASE}/api/scan`, {
+                        method: 'POST',
+                        headers: {'Content-Type': 'application/json'},
+                        body: JSON.stringify({ subnet: subnet })
+                    });
+                    
+                    const result = await response.json();
+
+                    if (!response.ok) {
+                        throw new Error(result.error || 'Scan failed');
+                    }
+                    
+                    showMessage('success', result.message);
+                    fetchDevices(); // Refresh the list
+
+                } catch (error) {
+                    console.error('Scan error:', error);
+                    showMessage('error', `Scan failed: ${error.message}`);
+                } finally {
+                    scanBtn.disabled = false;
+                    scanBtn.textContent = 'Scan';
+                }
+            }
+
+            async function handleAddDevice(e) {
+                e.preventDefault();
+                const ipInput = document.getElementById('add-ip');
+                const ip = ipInput.value;
+                if (!ip) {
+                    showMessage('error', 'Please enter an IP address.');
+                    return;
+                }
+
+                addBtn.disabled = true;
+                addBtn.textContent = 'Adding...';
+
+                try {
+                    const response = await fetch(`${API_BASE}/api/devices`, {
+                        method: 'POST',
+                        headers: {'Content-Type': 'application/json'},
+                        body: JSON.stringify({ ip: ip })
+                    });
+                    
+                    const result = await response.json();
+
+                    if (!response.ok) {
+                        throw new Error(result.error || 'Failed to add device');
+                    }
+                    
+                    showMessage('success', `Device ${ip} added and found online.`);
+                    ipInput.value = ''; // Clear input
+                    fetchDevices(); // Refresh the list
+
+                } catch (error) {
+                    console.error('Add device error:', error);
+                    showMessage('error', `Error: ${error.message}`);
+                } finally {
+                    addBtn.disabled = false;
+                    addBtn.textContent = 'Add';
+                }
+            }
+            
+            async function handleUpdateAll(e) {
+                e.preventDefault();
+                
+                const stratumEnonceChecked = stratumEnonceCheckbox.checked;
+                const fallbackEnonceChecked = fallbackEnonceCheckbox.checked;
+
+                const settings = {
+                    stratumURL: document.getElementById('stratumURL').value,
+                    stratumPort: document.getElementById('stratumPort').value,
+                    stratumUser: document.getElementById('stratumUser').value,
+                    stratumPass: document.getElementById('stratumPass').value,
+                    stratumEnonceSubscribe: stratumEnonceChecked,
+                    
+                    fallbackStratumURL: document.getElementById('fallbackStratumURL').value,
+                    fallbackStratumPort: document.getElementById('fallbackStratumPort').value,
+                    fallbackStratumUser: document.getElementById('fallbackStratumUser').value,
+                    fallbackStratumPass: document.getElementById('fallbackStratumPass').value,
+                    fallbackStratumEnonceSubscribe: fallbackEnonceChecked,
+                };
+
+                // Conditionally add difficulty settings ONLY if the checkbox is checked
+                if (stratumEnonceChecked) {
+                    settings.stratumSuggestedDifficulty = document.getElementById('stratumSuggestedDifficulty').value;
+                }
+                if (fallbackEnonceChecked) {
+                    settings.fallbackSuggestedDifficulty = document.getElementById('fallbackStratumSuggestedDifficulty').value;
+                }
+                
+                // Filter out empty values so we only send keys we want to set
+                const settingsToSend = Object.fromEntries(
+                    Object.entries(settings).filter(([_, v]) => v !== null && v !== '')
+                );
+
+                if (Object.keys(settingsToSend).length === 0) {
+                    showMessage('error', 'Please fill in at least one setting to update.');
+                    return;
+                }
+                
+                updateAllBtn.disabled = true;
+                updateAllBtn.textContent = 'Updating...';
+                
+                try {
+                    const response = await fetch(`${API_BASE}/api/update-all`, {
+                        method: 'POST',
+                        headers: {'Content-Type': 'application/json'},
+                        body: JSON.stringify(settingsToSend)
+                    });
+                    
+                    const result = await response.json();
+                    
+                    if (!response.ok) {
+                        throw new Error(result.error || 'Update request failed');
+                    }
+                    
+                    let successMsg = `Update sent. Success: ${result.success.length}. Failed: ${result.failed.length}.`;
+                    if (result.failed.length > 0) {
+                        console.error('Failed updates:', result.failed);
+                        showMessage('error', `${successMsg} Check console for failed device details.`);
+                    } else {
+                        showMessage('success', `${successMsg} Refreshing list...`);
+                    }
+                    
+                    // Refresh list after a moment to allow settings to apply
+                    setTimeout(fetchDevices, 3000);
+
+                } catch (error) {
+                    console.error('Update error:', error);
+                    showMessage('error', `Update failed: ${error.message}`);
+                } finally {
+                    updateAllBtn.disabled = false;
+                    updateAllBtn.textContent = 'Update All Devices';
+                }
+            }
+
+            // --- Event Listeners ---
+            scanBtn.addEventListener('click', handleScan);
+            addBtn.addEventListener('click', handleAddDevice);
+            settingsForm.addEventListener('submit', handleUpdateAll);
+
+            // Listen for checkbox changes
+            stratumEnonceCheckbox.addEventListener('change', (e) => {
+                stratumDifficultyWrapper.classList.toggle('hidden', !e.target.checked);
+            });
+
+            fallbackEnonceCheckbox.addEventListener('change', (e) => {
+                fallbackDifficultyWrapper.classList.toggle('hidden', !e.target.checked);
+            });
+
+            // --- Initial Load & Polling ---
+            fetchDevices(); // Initial load
+            setInterval(fetchDevices, 15000); // Poll every 15 seconds
+        });
+    </script>
+</body>
+</html>
+
