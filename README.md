@@ -1,3 +1,6 @@
+# ** WORK IN PROGRESS **
+NOT FULLY FUNCTIONAL AT THIS TIME
+
 # **AxePoolSetter**
 
 AxePoolSetter is an internal, web-based application designed to monitor and manage Bitcoin mining devices (specifically Nerdminers, Bitaxes, and similar devices) on a local network. It allows for network scanning to discover devices, manual addition of devices, and batch-updating of stratum configurations.
