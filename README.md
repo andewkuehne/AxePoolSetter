@@ -1,6 +1,6 @@
-# **Miner Monitor**
+# **AxePoolSetter**
 
-Miner Monitor is an internal, web-based application designed to monitor and manage Bitcoin mining devices (specifically Nerdminers, Bitaxes, and similar devices) on a local network. It allows for network scanning to discover devices, manual addition of devices, and batch-updating of stratum configurations.
+AxePoolSetter is an internal, web-based application designed to monitor and manage Bitcoin mining devices (specifically Nerdminers, Bitaxes, and similar devices) on a local network. It allows for network scanning to discover devices, manual addition of devices, and batch-updating of stratum configurations.
 
 This application is built with a Python (Flask) backend and a simple HTML/Tailwind CSS frontend, and is containerized with Docker for easy deployment.
 
